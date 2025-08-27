@@ -1,4 +1,4 @@
-﻿namespace SurveyBasket.Api.Models
+﻿namespace SurveyBasket.Models
 {
     public class Poll
     {
