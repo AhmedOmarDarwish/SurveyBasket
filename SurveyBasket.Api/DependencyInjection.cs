@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using SurveyBasket.Authentication;
 using System.Text;
 
 namespace SurveyBasket
@@ -11,9 +10,15 @@ namespace SurveyBasket
             IConfiguration configuration)
         {
             services.AddControllers();
+
+            //Add Distributed Memory Cache
+            services.AddDistributedMemoryCache();
+
+            //Add Hybrid
+            services.AddHybridCache();
+
             //Add Cors
             var allowOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
-
             services.AddCors(options => 
             {
                 options.AddDefaultPolicy(builder =>
@@ -49,6 +54,8 @@ namespace SurveyBasket
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IQuestionService, QuestionService>();
             services.AddScoped<IVoteService, VoteService>();
+            services.AddScoped<IResultService, ResultService>();
+            services.AddScoped<ICacheService, CacheService>();
 
 
             services.AddExceptionHandler<GlobalExceptionHandler>();

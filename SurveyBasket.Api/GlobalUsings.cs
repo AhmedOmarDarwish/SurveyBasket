@@ -17,7 +17,8 @@ global using SurveyBasket.Contracts.Questions;
 global using SurveyBasket.Contracts.Answer;
 global using SurveyBasket.Extensions;
 global using SurveyBasket.Contracts.Vote;
-
+global using SurveyBasket.Contracts.Results;
+global using Serilog;
 
 global using OneOf;
 
