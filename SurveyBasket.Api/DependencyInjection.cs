@@ -52,6 +52,7 @@ namespace SurveyBasket
 
             services.AddScoped<IPollService, PollService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IEmailSender, EmailService>();
             services.AddScoped<IQuestionService, QuestionService>();
             services.AddScoped<IVoteService, VoteService>();
             services.AddScoped<IResultService, ResultService>();
@@ -60,6 +61,13 @@ namespace SurveyBasket
 
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddProblemDetails();
+
+            //For Read Header and get Origin in AuthService
+            services.AddHttpContextAccessor();
+
+            //Map from AppSetting(Mail Section) to MailSetting Class 
+            services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
+
             return services;
         }
 
@@ -91,8 +99,10 @@ namespace SurveyBasket
 
         private static IServiceCollection AddAuthConfing(this IServiceCollection services, IConfiguration configuration)
         {
+            //Add Identity
             services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
 
             services.AddSingleton<IJwtProvider, JwtProvider>();
 
@@ -125,6 +135,17 @@ namespace SurveyBasket
                     };               
                 });
 
+            services.Configure<IdentityOptions>(options =>
+             {
+                // Default Password settings.
+                options.Password.RequiredLength = 8;
+
+                // Default SignIn settings.
+                 options.SignIn.RequireConfirmedEmail = true;
+
+                // Default User settings.
+                options.User.RequireUniqueEmail = true;
+             });
             return services;
         }
     }

@@ -18,13 +18,15 @@ global using SurveyBasket.Contracts.Answer;
 global using SurveyBasket.Extensions;
 global using SurveyBasket.Contracts.Vote;
 global using SurveyBasket.Contracts.Results;
+global using SurveyBasket.Abstractions.Consts;
+global using SurveyBasket.Settings;
+
+
 global using Serilog;
-
 global using OneOf;
-
 global using Mapster;
 global using MapsterMapper;
-
+global using MimeKit;
 global using FluentValidation;
 global using FluentValidation.AspNetCore;
 
@@ -32,6 +34,8 @@ global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Identity;
+global using Microsoft.AspNetCore.Identity.UI.Services;
+
 global using Microsoft.Extensions.Options;
 global using Microsoft.AspNetCore.Authorization;
 
