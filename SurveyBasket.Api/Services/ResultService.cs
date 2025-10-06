@@ -13,7 +13,7 @@
                     p.Title,
                     p.Votes.Select(v => new VoteResponse
                     (
-                        v.User.GetUserName()!,
+                        v.User.GetUserFullName()!,
                         v.SubmittedOn,
                         v.VoteAnswers.Select(a => new QuestionAnswerResponse
                         (

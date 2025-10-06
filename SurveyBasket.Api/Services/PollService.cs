@@ -3,9 +3,10 @@ using SurveyBasket.Entities;
 
 namespace SurveyBasket.Services
 {
-    public class PollService(ApplicationDbContext context) : IPollService
+    public class PollService(ApplicationDbContext context, INotificationService notificationService1) : IPollService
     {
         private readonly ApplicationDbContext _context  = context;
+        private readonly INotificationService _notificationService1 = notificationService1;
 
         public async Task<IEnumerable<PollResponse>> GetAllAsync(CancellationToken cancellationToken = default) =>
             await _context.Polls
@@ -71,6 +72,10 @@ namespace SurveyBasket.Services
             if (poll is null) return Result.Failure(PollErrors.PollNotFound);
             poll.IsPublished = !poll.IsPublished;
             await _context.SaveChangesAsync(cancellationToken);
+            //Send Email
+            if (poll.IsPublished && poll.StartsAt == DateOnly.FromDateTime(DateTime.Now))
+                BackgroundJob.Enqueue(() => _notificationService1.SendNewPollsNotification(poll.Id));
+
             return Result.Success();
         }
     }

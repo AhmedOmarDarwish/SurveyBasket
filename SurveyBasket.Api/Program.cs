@@ -1,3 +1,4 @@
+using Hangfire.Dashboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,33 @@ if (app.Environment.IsDevelopment())
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
+
+//Hangfire
+app.UseHangfireDashboard("/jobs", new DashboardOptions
+{
+    Authorization =
+    [
+        new HangfireCustomBasicAuthenticationFilter
+        {
+            User = app.Configuration.GetValue<string>("HangfireSettings:Username"),
+            Pass = app.Configuration.GetValue<string>("HangfireSettings:Password")
+        }
+    ],
+    DashboardTitle = "Survey BasketDashboard",  
+    //Disable Dashboard checkbox
+   // IsReadOnlyFunc = (DashboardContext context) => true
+});
+
+//Add Scope To access to INotificationService
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+using var scope = scopeFactory.CreateScope();
+var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+RecurringJob.AddOrUpdate
+    ("SendNewPollsNotification",
+    () => notificationService.SendNewPollsNotification(null)
+    ,Cron.Daily);
+
+
 
 //app.UseCors("MyPolicy");
 app.UseCors();

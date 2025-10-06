@@ -2,6 +2,7 @@
 using SurveyBasket.Helpers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace SurveyBasket.Services
@@ -12,7 +13,8 @@ namespace SurveyBasket.Services
         IJwtProvider jwtProvider,
         ILogger<AuthService> logger,
         IEmailSender emailSender,
-        IHttpContextAccessor httpContextAccessor
+        IHttpContextAccessor httpContextAccessor,
+        ApplicationDbContext context
         ) : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager = userManager;
@@ -21,6 +23,7 @@ namespace SurveyBasket.Services
         private readonly ILogger<AuthService> _logger = logger;
         private readonly IEmailSender _emailSender = emailSender;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly ApplicationDbContext _context = context;
         private readonly int _refreshTokenExpiryDays = 14;
 
         public async Task<Result<AuthResponse>> GetTokenAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -28,7 +31,7 @@ namespace SurveyBasket.Services
             //Check User?
             //var user = await _userManager.FindByEmailAsync(email);
             //if (user is null) return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
-            
+
             //New Way
             if (await _userManager.FindByEmailAsync(email) is not { } user)
                 return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
@@ -39,8 +42,11 @@ namespace SurveyBasket.Services
             var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
             if (result.Succeeded)
             {
+                //Get All Roles and Permission For user
+                var(userRoles, userPermission) = await GetUserRolesAndPermission(user, cancellationToken);
+
                 //Generate JWT Token
-                var (token, expireIn) = _jwtProvider.GenerateToken(user);
+                var (token, expireIn) = _jwtProvider.GenerateToken(user, userRoles, userPermission);
 
                 //Generate Refresh Token
                 var refreshToken = GenerateRefreshToken();
@@ -56,7 +62,7 @@ namespace SurveyBasket.Services
                 return Result.Success(response);
             }
 
-            return Result.Failure<AuthResponse>(result.IsNotAllowed? UserErrors.EmailNotConfirmed : UserErrors.InvalidCredentials);
+            return Result.Failure<AuthResponse>(result.IsNotAllowed ? UserErrors.EmailNotConfirmed : UserErrors.InvalidCredentials);
         }
 
         //public async Task<OneOf<AuthResponse, Error>> GetTokenAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -102,8 +108,11 @@ namespace SurveyBasket.Services
 
             userRefreshToken.RevokedOn = DateTime.Now;
 
+            //Get All Roles and Permission For user
+            var (userRoles, userPermission) = await GetUserRolesAndPermission(user, cancellationToken);
+
             //Generate JWT Token
-            var (newToken, expireIn) = _jwtProvider.GenerateToken(user);
+            var (newToken, expireIn) = _jwtProvider.GenerateToken(user, userRoles, userPermission);
 
             //Generate Refresh Token
             var newRefreshToken = GenerateRefreshToken();
@@ -152,7 +161,8 @@ namespace SurveyBasket.Services
             {
                 var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                _logger.LogInformation("Confirmation Code: {code}", code );
+                _logger.LogInformation("Confirmation Code: {code}", code);
+
 
                 //Send Email
                 await SendConfirmationEmail(user, code);
@@ -167,10 +177,10 @@ namespace SurveyBasket.Services
 
         public async Task<Result> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default)
         {
-            if(await _userManager.FindByIdAsync(request.UserId) is not { } user)
+            if (await _userManager.FindByIdAsync(request.UserId) is not { } user)
                 return Result.Failure(UserErrors.InvalidCode);
 
-            if(user.EmailConfirmed) return Result.Failure(UserErrors.DuplicatedConfirmation);
+            if (user.EmailConfirmed) return Result.Failure(UserErrors.DuplicatedConfirmation);
 
             var code = request.Code;
 
@@ -184,9 +194,13 @@ namespace SurveyBasket.Services
             }
 
             var result = await _userManager.ConfirmEmailAsync(user, code);
-            if (result.Succeeded) return Result.Success();
-
-            var error =  result.Errors.First();
+            if (result.Succeeded)
+            {
+                //Add Default Role to User
+                await _userManager.AddToRoleAsync(user, DefaultRoles.Member);
+                return Result.Success();
+            }
+            var error = result.Errors.First();
             return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status400BadRequest));
         }
 
@@ -194,6 +208,7 @@ namespace SurveyBasket.Services
         {
             if (await _userManager.FindByEmailAsync(request.Email) is not { } user)
                 // return Result.Failure(UserErrors.InvalidCredentials);
+                // Use here success to hide for user your email is true or not for hacking
                 return Result.Success();
 
             if (user.EmailConfirmed) return Result.Failure(UserErrors.DuplicatedConfirmation);
@@ -207,6 +222,45 @@ namespace SurveyBasket.Services
 
             return Result.Success();
 
+        }
+
+        public async Task<Result> SendResetPasswordCodeAsync(string email, CancellationToken cancellationToken = default)
+        {
+            if (await _userManager.FindByEmailAsync(email) is not { } user)
+                return Result.Success();
+
+            if (!user.EmailConfirmed)
+                return Result.Failure(UserErrors.EmailNotConfirmed);
+
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            _logger.LogInformation("Reset Code: {code}", code);
+
+            await SendResetPasswordEmail(user, code);
+            return Result.Success();
+        }
+
+        public async Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is null || !user.EmailConfirmed)
+                return Result.Failure(UserErrors.InvalidCode);
+
+            IdentityResult result;
+            try
+            {
+                var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Code));
+                result = await _userManager.ResetPasswordAsync(user, code, request.NewPassword);
+            }
+            catch (FormatException)
+            {
+                result = IdentityResult.Failed(_userManager.ErrorDescriber.InvalidToken());
+            }
+
+            if (result.Succeeded) return Result.Success();
+
+            var error = result.Errors.First();
+            return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status401Unauthorized));
         }
 
         private static string GenerateRefreshToken()
@@ -230,9 +284,56 @@ namespace SurveyBasket.Services
                 }
             );
 
-            await _emailSender.SendEmailAsync(user.Email!, "Survey Basket: Email Confirmation", emailBody);
-
+            //Use HangFire to send Email
+            BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "Survey Basket: Email Confirmation", emailBody));
+            await Task.CompletedTask;
         }
 
+        private async Task SendResetPasswordEmail(ApplicationUser user, string code)
+        {
+            //Send Email
+            //var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin; //Get Url
+            var requestURL = _httpContextAccessor.HttpContext?.Request;
+            var origin = $"{requestURL?.Scheme}://{requestURL?.Host}";
+
+            var emailBody = EmailBodyBuilder.GenerateEmailBody(
+                "ForgetPassword",
+                new Dictionary<string, string>
+                {
+                    {"{{name}}", user.FirstName },
+                        {"{{action_url}}", $"{origin}/auth/forgetPassword?UserEmail={user.Email}&code={code}"}
+                }
+            );
+
+            //Use HangFire to send Email
+            BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "Survey Basket: Change Password", emailBody));
+            await Task.CompletedTask;
+        }
+
+        private async Task<(IEnumerable<string> roles, IEnumerable<string> permission)> GetUserRolesAndPermission(ApplicationUser user, CancellationToken cancellationToken)
+        {
+            //Get All Roles for user
+            var userRoles = await _userManager.GetRolesAsync(user);
+            //Get All Permission From UserRoles
+
+            //var userPermission = await _context.Roles
+            //    .Join(_context.RoleClaims,
+            //        role => role.Id,
+            //        claim => claim.RoleId,
+            //        (role, claim) => new { role, claim }
+            //    ).Where(x => userRoles.Contains(x.role.Name!))
+            //    .Select(x => x.claim.ClaimValue!)
+            //    .Distinct()
+            //    .ToListAsync(cancellationToken);
+
+            var userPermission = await (from r in _context.Roles
+                                        join p in _context.RoleClaims
+                                        on r.Id equals p.RoleId
+                                        where userRoles.Contains(r.Name!)
+                                        select p.ClaimValue!)
+                                        .Distinct()
+                                        .ToListAsync(cancellationToken);
+            return (userRoles, userPermission);
+        }
     }
 }

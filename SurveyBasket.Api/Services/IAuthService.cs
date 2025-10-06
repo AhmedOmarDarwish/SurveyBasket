@@ -10,5 +10,7 @@ namespace SurveyBasket.Services
         Task<Result> RegisterAsync(RegisterRequest registerRequest, CancellationToken cancellationToken = default);
         Task<Result> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default);
         Task<Result> ResendConfirmationEmailAsync(ResendConfirmationEmailRequest request, CancellationToken cancellationToken = default);
+        Task<Result> SendResetPasswordCodeAsync(string email, CancellationToken cancellationToken = default);
+        Task<Result> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
     }
 }

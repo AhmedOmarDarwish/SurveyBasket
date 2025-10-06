@@ -68,6 +68,24 @@
                 : result.ToProblem();
         }
 
+        [HttpPost("forget-password")]
+        public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.SendResetPasswordCodeAsync(request.Email, cancellationToken);
+            return result.IsSuccess
+                ? Ok()
+                : result.ToProblem();
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+            return result.IsSuccess
+                ? Ok()
+                : result.ToProblem();
+        }
+
     }
 
 }

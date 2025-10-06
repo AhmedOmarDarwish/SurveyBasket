@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Configuration;
 using System.Text;
 
 namespace SurveyBasket
@@ -14,7 +15,7 @@ namespace SurveyBasket
             //Add Distributed Memory Cache
             services.AddDistributedMemoryCache();
 
-            //Add Hybrid
+            //Add Hybrid Cache
             services.AddHybridCache();
 
             //Add Cors
@@ -48,7 +49,9 @@ namespace SurveyBasket
                 .AddSwaggerServices()
                 .AddMapsterConfing()
                 .AddFluentValidationConfing()
-                .AddAuthConfing(configuration);
+                .AddAuthConfing(configuration)
+                .AddBackgroundJobsConfig(configuration);
+                
 
             services.AddScoped<IPollService, PollService>();
             services.AddScoped<IAuthService, AuthService>();
@@ -57,6 +60,8 @@ namespace SurveyBasket
             services.AddScoped<IVoteService, VoteService>();
             services.AddScoped<IResultService, ResultService>();
             services.AddScoped<ICacheService, CacheService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IUserService, UserService>();
 
 
             services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -100,9 +105,12 @@ namespace SurveyBasket
         private static IServiceCollection AddAuthConfing(this IServiceCollection services, IConfiguration configuration)
         {
             //Add Identity
-            services.AddIdentity<ApplicationUser, IdentityRole>()
+            services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+            //For Permissions
+            services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
+            services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 
             services.AddSingleton<IJwtProvider, JwtProvider>();
 
@@ -146,6 +154,23 @@ namespace SurveyBasket
                 // Default User settings.
                 options.User.RequireUniqueEmail = true;
              });
+            return services;
+        }
+
+        private static IServiceCollection AddBackgroundJobsConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+
+            // Add Hangfire services.
+            services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection") ??
+             throw new InvalidOperationException("Connection string 'HangfireConnection' not found.")));
+
+            // Add the processing server as IHostedService
+            services.AddHangfireServer();
+
             return services;
         }
     }
