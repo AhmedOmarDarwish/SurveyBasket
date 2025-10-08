@@ -15,6 +15,7 @@ global using SurveyBasket.Contracts.Questions;
 global using SurveyBasket.Contracts.Answer;
 global using SurveyBasket.Contracts.Vote;
 global using SurveyBasket.Contracts.Results;
+global using SurveyBasket.Contracts.Roles;
 global using SurveyBasket.Contracts.Users;
 global using SurveyBasket.Entities;
 global using SurveyBasket.Extensions;
@@ -23,6 +24,7 @@ global using SurveyBasket.Services;
 global using SurveyBasket.Settings;
 global using SurveyBasket.Persistence;
 global using SurveyBasket.Authentication.Filters;
+
 
 
 global using Serilog;

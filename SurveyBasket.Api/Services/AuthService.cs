@@ -36,10 +36,13 @@ namespace SurveyBasket.Services
             if (await _userManager.FindByEmailAsync(email) is not { } user)
                 return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
 
+            if (user.IsDisabled)
+                return Result.Failure<AuthResponse>(UserErrors.DisabledUser);
+
             //var isValidPassword = await _userManager.CheckPasswordAsync(user, password);
             //if (!isValidPassword) return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
 
-            var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(user, password, false, true);
             if (result.Succeeded)
             {
                 //Get All Roles and Permission For user
@@ -62,7 +65,13 @@ namespace SurveyBasket.Services
                 return Result.Success(response);
             }
 
-            return Result.Failure<AuthResponse>(result.IsNotAllowed ? UserErrors.EmailNotConfirmed : UserErrors.InvalidCredentials);
+            var error = result.IsNotAllowed 
+                ? UserErrors.EmailNotConfirmed 
+                : result.IsLockedOut
+                ? UserErrors.LockedUser
+                : UserErrors.InvalidCredentials;
+
+            return Result.Failure<AuthResponse>(error);
         }
 
         //public async Task<OneOf<AuthResponse, Error>> GetTokenAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -101,6 +110,12 @@ namespace SurveyBasket.Services
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null)
                 return Result.Failure<AuthResponse>(UserErrors.InvalidJwtToken);
+
+            if (user.IsDisabled)
+                return Result.Failure<AuthResponse>(UserErrors.DisabledUser);
+
+            if (user.LockoutEnd > DateTime.Now)
+                return Result.Failure<AuthResponse>(UserErrors.LockedUser);
 
             var userRefreshToken = user.RefreshTokens.SingleOrDefault(x => x.Token == refreshToken && x.IsActive);
             if (userRefreshToken is null)
