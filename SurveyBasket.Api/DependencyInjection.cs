@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SurveyBasket.Health;
 using System.Configuration;
 using System.Text;
 
@@ -74,6 +75,12 @@ namespace SurveyBasket
             //Map from AppSetting(Mail Section) to MailSetting Class 
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
 
+            //Add Health Checks
+            services.AddHealthChecks()
+                .AddSqlServer(name: "database", connectionString: connectionString)
+                .AddHangfire(Options => { Options.MinimumAvailableServers = 1; })
+                .AddUrlGroup(name: "external API", uri: new Uri("https://www.google.com")/*, tags: ["api"], httpMethod: HttpMethod.Get*/)
+                .AddCheck<MailProviderHealthCheck>(name: "mail service");
             return services;
         }
 

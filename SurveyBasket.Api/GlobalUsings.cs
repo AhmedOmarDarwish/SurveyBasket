@@ -37,6 +37,9 @@ global using FluentValidation.AspNetCore;
 global using Hangfire;
 global using Hangfire.SqlServer;
 global using HangfireBasicAuthenticationFilter;
+global using MailKit.Net.Smtp;
+global using MailKit.Security;
+
 
 
 global using Microsoft.EntityFrameworkCore;

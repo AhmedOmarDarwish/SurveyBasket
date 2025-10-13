@@ -1,4 +1,6 @@
 using Hangfire.Dashboard;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,5 +58,17 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.UseExceptionHandler();
+
+//Add Health checks
+app.MapHealthChecks("health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+    //If I need To sperate them with tags
+app.MapHealthChecks("health-check-api", new HealthCheckOptions
+{
+    Predicate = x => x.Tags.Contains("api"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();
