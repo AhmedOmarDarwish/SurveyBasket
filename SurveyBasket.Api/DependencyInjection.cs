@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using SurveyBasket.Health;
-using System.Configuration;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace SurveyBasket
 {
@@ -21,7 +22,7 @@ namespace SurveyBasket
 
             //Add Cors
             var allowOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
-            services.AddCors(options => 
+            services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
                     builder
@@ -51,8 +52,10 @@ namespace SurveyBasket
                 .AddMapsterConfing()
                 .AddFluentValidationConfing()
                 .AddAuthConfing(configuration)
-                .AddBackgroundJobsConfig(configuration);
-                
+                .AddBackgroundJobsConfig(configuration)
+                .AddRateLimitingConfig();
+            
+
 
             services.AddScoped<IPollService, PollService>();
             services.AddScoped<IAuthService, AuthService>();
@@ -75,6 +78,7 @@ namespace SurveyBasket
             //Map from AppSetting(Mail Section) to MailSetting Class 
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
 
+            
             //Add Health Checks
             services.AddHealthChecks()
                 .AddSqlServer(name: "database", connectionString: connectionString)
@@ -128,8 +132,8 @@ namespace SurveyBasket
                 .BindConfiguration(JwtOptions.SectionName)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-            
-            var jwtSettings =  configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
+
+            var jwtSettings = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
 
             services.AddAuthentication(
                 options =>
@@ -137,7 +141,8 @@ namespace SurveyBasket
                     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 }
-                ).AddJwtBearer(options => {
+                ).AddJwtBearer(options =>
+                {
                     options.SaveToken = true;
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
@@ -148,19 +153,19 @@ namespace SurveyBasket
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings?.Key!)),
                         ValidIssuer = jwtSettings?.Issuer,
                         ValidAudience = jwtSettings?.Audience,
-                    };               
+                    };
                 });
 
             services.Configure<IdentityOptions>(options =>
              {
-                // Default Password settings.
-                options.Password.RequiredLength = 8;
+                 // Default Password settings.
+                 options.Password.RequiredLength = 8;
 
-                // Default SignIn settings.
+                 // Default SignIn settings.
                  options.SignIn.RequireConfirmedEmail = true;
 
-                // Default User settings.
-                options.User.RequireUniqueEmail = true;
+                 // Default User settings.
+                 options.User.RequireUniqueEmail = true;
              });
             return services;
         }
@@ -178,6 +183,75 @@ namespace SurveyBasket
 
             // Add the processing server as IHostedService
             services.AddHangfireServer();
+
+            return services;
+        }
+
+        private static IServiceCollection AddRateLimitingConfig(this IServiceCollection services)
+        {
+            //User Rate Limiter
+            services.AddRateLimiter(rateLimiterOptions =>
+            {
+                rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                rateLimiterOptions.AddPolicy(RateLimiters.IpLimiter, HttpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 2,
+                            Window = TimeSpan.FromSeconds(20)
+                        }
+                    )
+                );
+
+                rateLimiterOptions.AddPolicy(RateLimiters.UserLimiter, HttpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: HttpContext.User.GetUserId(),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 2,
+                            Window = TimeSpan.FromSeconds(20)
+                        }
+                    )
+                );
+
+                rateLimiterOptions.AddConcurrencyLimiter(RateLimiters.Concurrency, options =>
+                {
+                    options.PermitLimit = 1000;
+                    options.QueueLimit = 100;
+                    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                });
+
+                //rateLimiterOptions.AddTokenBucketLimiter("token", options =>
+                //{
+                //    options.TokenLimit = 2;
+                //    options.QueueLimit = 1;
+                //    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                //    options.ReplenishmentPeriod = TimeSpan.FromSeconds(30);
+                //    options.TokensPerPeriod = 1;
+                //    options.AutoReplenishment = true;
+                //});
+
+                //rateLimiterOptions.AddFixedWindowLimiter("fixed", options =>
+                //{
+                //    options.PermitLimit = 2;
+                //    options.Window = TimeSpan.FromSeconds(20);
+                //    options.QueueLimit = 1;
+                //    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+
+                //});
+
+                //rateLimiterOptions.AddSlidingWindowLimiter("sliding", options =>
+                //{
+                //    options.PermitLimit = 2;
+                //    options.Window = TimeSpan.FromSeconds(20);
+                //    options.SegmentsPerWindow = 2;
+                //    options.QueueLimit = 1;
+                //    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                //});
+
+            });
 
             return services;
         }

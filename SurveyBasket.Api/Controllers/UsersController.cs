@@ -1,4 +1,6 @@
-﻿namespace SurveyBasket.Contracts.Users
+﻿using Microsoft.AspNetCore.RateLimiting;
+
+namespace SurveyBasket.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -19,7 +21,7 @@
         public async Task<IActionResult> Get([FromRoute] string id, CancellationToken cancellationToken)
         {
             var result = await _userService.GetAsync(id, cancellationToken);
-            return result.IsSuccess? Ok(result.Value) : result.ToProblem();
+            return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
         }
 
         [HttpPost("")]
@@ -27,7 +29,7 @@
         public async Task<IActionResult> Add([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
         {
             var result = await _userService.AddAsync(request, cancellationToken);
-            return result.IsSuccess ? CreatedAtAction(nameof(Get), new {result.Value.Id}, result.Value) : result.ToProblem(); 
+            return result.IsSuccess ? CreatedAtAction(nameof(Get), new { result.Value.Id }, result.Value) : result.ToProblem();
         }
 
         [HttpPut("{id}")]

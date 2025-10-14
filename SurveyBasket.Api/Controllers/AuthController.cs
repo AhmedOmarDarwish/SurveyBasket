@@ -1,7 +1,10 @@
-﻿namespace SurveyBasket.Controllers
+﻿using Microsoft.AspNetCore.RateLimiting;
+
+namespace SurveyBasket.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [EnableRateLimiting(RateLimiters.IpLimiter)]
     public class AuthController(IAuthService authService) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
@@ -42,6 +45,7 @@
         }
 
         [HttpPost("register")]
+        [DisableRateLimiting]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         {
             var result = await _authService.RegisterAsync(request, cancellationToken);
@@ -86,6 +90,13 @@
                 : result.ToProblem();
         }
 
+        //[HttpGet("test")]
+        //[EnableRateLimiting("token")]
+        //public IActionResult Test()
+        //{
+        //    Thread.Sleep(6000);
+        //    return Ok();
+        //}
     }
 
 }

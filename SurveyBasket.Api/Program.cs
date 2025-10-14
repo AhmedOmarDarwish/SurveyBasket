@@ -59,6 +59,9 @@ app.MapControllers();
 
 app.UseExceptionHandler();
 
+//Use RateLimiter
+app.UseRateLimiter();
+
 //Add Health checks
 app.MapHealthChecks("health", new HealthCheckOptions
 {
