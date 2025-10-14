@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using SurveyBasket.Health;
+using SurveyBasket.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -48,7 +50,6 @@ namespace SurveyBasket
 
             services
                 .AddSwaggerServices()
-                .AddSwaggerServices()
                 .AddMapsterConfing()
                 .AddFluentValidationConfing()
                 .AddAuthConfing(configuration)
@@ -93,6 +94,7 @@ namespace SurveyBasket
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
             return services;
         }
 
