@@ -15,21 +15,21 @@
 
 
             //Default Data
-            var passwordHasher = new PasswordHasher<ApplicationUser>();
+           // var passwordHasher = new PasswordHasher<ApplicationUser>();
             builder.HasData(new ApplicationUser
             {
-                Id = DefaultUsers.AdminId,
-                FirstName = DefaultUsers.AdminFirstName,
-                LastName = DefaultUsers.AdminLastName,
-                Email = DefaultUsers.AdminEmail,
-                UserName = DefaultUsers.AdminUserName,
-                NormalizedEmail = DefaultUsers.AdminEmail.ToUpper(),
-                NormalizedUserName = DefaultUsers.AdminUserName.ToUpper(),
-                SecurityStamp = DefaultUsers.AdminSecurityStamp,
-                ConcurrencyStamp = DefaultUsers.AdminConcurrencyStamp,
+                Id = DefaultUsers.Admin.Id,
+                FirstName = DefaultUsers.Admin.FirstName,
+                LastName = DefaultUsers.Admin.LastName,
+                Email = DefaultUsers.Admin.Email,
+                UserName = DefaultUsers.Admin.UserName,
+                NormalizedEmail = DefaultUsers.Admin.Email.ToUpper(),
+                NormalizedUserName = DefaultUsers.Admin.UserName.ToUpper(),
+                SecurityStamp = DefaultUsers.Admin.SecurityStamp,
+                ConcurrencyStamp = DefaultUsers.Admin.ConcurrencyStamp,
                 EmailConfirmed = true,
                 //PasswordHash = passwordHasher.HashPassword(null,DefaultUsers.AdminPassword)
-                PasswordHash = DefaultUsers.AdminPasswordHasher
+                PasswordHash = DefaultUsers.Admin.PasswordHasher
             });
 
         }

@@ -16,7 +16,7 @@ namespace SurveyBasket.Controllers
         }
 
         [HttpGet("current")]
-        [Authorize(Roles = DefaultRoles.Member)]
+        [Authorize(Roles = DefaultRoles.Member.Name)]
         [EnableRateLimiting(RateLimiters.UserLimiter)]
         public async Task<IActionResult> GetCurrent(CancellationToken cancellationToken)
         {
@@ -68,7 +68,7 @@ namespace SurveyBasket.Controllers
             return result.IsSuccess ? NoContent() : result.ToProblem();
         }
 
-        [HttpPut("{id}/togglePublish")]
+        [HttpPut("{id}/toggle-publish")]
         [HasPermission(Permissions.UpdatePolls)]
         public async Task<IActionResult> TogglePublish([FromRoute] int id, CancellationToken cancellationToken)
         {

@@ -14,7 +14,7 @@ namespace SurveyBasket.Services
                    from ur in userRoles.DefaultIfEmpty() // LEFT JOIN for get all user without role
                    join r in _context.Roles
                    on ur.RoleId equals r.Id into roles
-                   where !roles.Any(x=> x.Name == DefaultRoles.Member)
+                   where !roles.Any(x=> x.Name == DefaultRoles.Member.Name)
                    select new
                        {
                            u.Id,

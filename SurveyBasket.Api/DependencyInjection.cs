@@ -77,7 +77,11 @@ namespace SurveyBasket
             services.AddHttpContextAccessor();
 
             //Map from AppSetting(Mail Section) to MailSetting Class 
-            services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
+            //services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
+            services.AddOptions<MailSettings>()
+                .BindConfiguration(nameof(MailSettings))
+                .ValidateDataAnnotations()  //For Apply DataAnnotations
+                .ValidateOnStart();
 
             
             //Add Health Checks
@@ -132,7 +136,7 @@ namespace SurveyBasket
             //services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
             services.AddOptions<JwtOptions>()
                 .BindConfiguration(JwtOptions.SectionName)
-                .ValidateDataAnnotations()
+                .ValidateDataAnnotations() //For Apply DataAnnotations
                 .ValidateOnStart();
 
             var jwtSettings = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();

@@ -28,9 +28,9 @@ namespace SurveyBasket.Services
                     .ToListAsync();
             }
 
-            //TODO: Select MembersOnly
+            // Select MembersOnly
+            var users = await _userManager.GetUsersInRoleAsync(DefaultRoles.Member.Name);
 
-            var users = await _userManager.Users.ToListAsync();
             var requestURL = _httpContextAccessor.HttpContext?.Request;
             var origin = $"{requestURL?.Scheme}://{requestURL?.Host}";
 

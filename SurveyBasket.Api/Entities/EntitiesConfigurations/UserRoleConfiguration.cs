@@ -8,8 +8,8 @@ namespace SurveyBasket.Entities.EntitiesConfigurations
             //Default Data
             builder.HasData(new IdentityUserRole<string>
             {
-                UserId = DefaultUsers.AdminId,
-                RoleId = DefaultRoles.AdminRoleId
+                UserId = DefaultUsers.Admin.Id,
+                RoleId = DefaultRoles.Admin.Id
             });
         }
     }

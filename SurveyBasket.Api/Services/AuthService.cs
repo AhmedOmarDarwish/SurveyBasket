@@ -212,7 +212,7 @@ namespace SurveyBasket.Services
             if (result.Succeeded)
             {
                 //Add Default Role to User
-                await _userManager.AddToRoleAsync(user, DefaultRoles.Member);
+                await _userManager.AddToRoleAsync(user, DefaultRoles.Member.Name);
                 return Result.Success();
             }
             var error = result.Errors.First();
@@ -245,7 +245,7 @@ namespace SurveyBasket.Services
                 return Result.Success();
 
             if (!user.EmailConfirmed)
-                return Result.Failure(UserErrors.EmailNotConfirmed);
+                return Result.Failure(UserErrors.EmailNotConfirmed with {StatusCode = StatusCodes.Status400BadRequest});
 
             var code = await _userManager.GeneratePasswordResetTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));

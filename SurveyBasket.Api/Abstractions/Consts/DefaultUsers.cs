@@ -2,14 +2,17 @@
 {
     public static class DefaultUsers
     {
-        public const string AdminId = "6dc6528a-b280-4770-9eae-82671ee81ef7";
-        public const string AdminEmail = "admin@survey-basket.com";
-        public const string AdminUserName = "admin@survey-basket.com";
-        public const string AdminFirstName = "Survey";
-        public const string AdminLastName = "Basket";
-        public const string AdminSecurityStamp = "55BF92C9EF0249CDA210D85D1A851BC9";
-        public const string AdminConcurrencyStamp = "99d2bbc6-bc54-4248-a172-a77de3ae4430";
-        public const string AdminPassword = "P@ssword123";
-        public const string AdminPasswordHasher = "AQAAAAIAAYagAAAAEFk7dH54SfYe8Njv6bjnWYyM3oKBTR92TC1yb8gcrhl6vl3f/AZB7/Lue/+dhcWjgg==";
+        public partial class Admin
+        {
+        public const string Id = "0199ea7d-3cde-740a-8a19-057262310367";
+        public const string Email = "admin@survey-basket.com";
+        public const string UserName = "admin@survey-basket.com";
+        public const string FirstName = "Survey";
+        public const string LastName = "Basket";
+        public const string SecurityStamp = "55BF92C9EF0249CDA210D85D1A851BC9";
+        public const string ConcurrencyStamp = "0199ea7d-3cde-73f7-95b4-345a45da425e";
+        public const string Password = "P@ssword123";
+        public const string PasswordHasher = "AQAAAAIAAYagAAAAEFk7dH54SfYe8Njv6bjnWYyM3oKBTR92TC1yb8gcrhl6vl3f/AZB7/Lue/+dhcWjgg==";
+        }
     }
 }
