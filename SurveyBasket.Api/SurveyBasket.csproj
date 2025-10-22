@@ -41,4 +41,9 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.9" />
   </ItemGroup>
 
+    <!--to add folder when i make publish-->
+	<ItemGroup>
+		<Content Include="Templates/**"></Content>
+	</ItemGroup>
+
 </Project>

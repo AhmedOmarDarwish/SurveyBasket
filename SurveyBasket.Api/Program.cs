@@ -57,6 +57,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseStaticFiles();
+
 app.UseExceptionHandler();
 
 //Use RateLimiter

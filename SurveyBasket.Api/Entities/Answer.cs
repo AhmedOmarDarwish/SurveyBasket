@@ -8,6 +8,5 @@
         public bool IsActive { get; set; } = true;
 
         public Question Question { get; set; } = default!;
-
     }
 }

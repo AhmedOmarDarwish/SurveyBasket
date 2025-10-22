@@ -135,7 +135,7 @@ namespace SurveyBasket.Services
             var question = request.Adapt<Question>();
             question.PollId = pollId;
 
-            request.Answers.ForEach(answer => question.Answers.Add(new Answer { Content = answer }));
+            //request.Answers.ForEach(answer => question.Answers.Add(new Answer { Content = answer }));
             await _context.AddAsync(question, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
